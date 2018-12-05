@@ -2,11 +2,12 @@
 #include "Utility/Assert.hpp"
 
 namespace FileFormats::TwoDA::Friendly {
+static std::string empty_string = "";
 
-TwoDARow::TwoDARow(std::uint32_t rowId,
+TwoDARow::TwoDARow(std::uint32_t rowIdx, std::string rowName,
     std::vector<TwoDAEntry>&& data,
     std::unordered_map<std::string, std::size_t> const& columns)
-    : m_RowId(rowId),
+    : m_RowIdx(rowIdx), m_RowName(rowName),
       m_ColumnNames(columns),
       m_Data(std::forward<std::vector<TwoDAEntry>>(data))
 {
@@ -78,9 +79,14 @@ bool TwoDARow::IsEmpty(std::string const& column) const
     return operator[](column).m_IsEmpty;
 }
 
-std::uint32_t TwoDARow::RowId() const
+std::uint32_t TwoDARow::RowIdx() const
 {
-    return m_RowId;
+    return m_RowIdx;
+}
+
+std::string TwoDARow::RowName() const
+{
+    return m_RowName;
 }
 
 TwoDARow::TwoDAEntries::iterator TwoDARow::begin()
@@ -136,7 +142,8 @@ TwoDA::TwoDA(Raw::TwoDA const& raw2da)
 
         // We store the row ID - this isn't necessarily to be used by the user,
         // but could store funky stuff that we might want to access.
-        std::uint32_t rowId = std::stoul(tokens[0]);
+        std::uint32_t rowIdx = i-3;
+        std::uint32_t rowName = std::stoul(tokens[0]);
 
         // Skip the first token (which is the row number) when setting this up.
         for (std::size_t j = 1; j < m_ColumnNames.size() + 1; ++j)
@@ -156,7 +163,7 @@ TwoDA::TwoDA(Raw::TwoDA const& raw2da)
             entries.emplace_back(std::move(entry));
         }
 
-        m_Rows.emplace_back(rowId, std::move(entries), m_ColumnNames);
+        m_Rows.emplace_back(rowIdx, std::move(entries), m_ColumnNames);
     }
 }
 
@@ -170,6 +177,26 @@ std::string const& TwoDA::AsStr(std::size_t row, std::string const& column) cons
     return m_Rows[row].AsStr(column);
 }
 
+std::string const& TwoDA::AsStr(std::string rowName, std::size_t column) const
+{
+    for (auto row: m_Rows)
+    {
+        if (row.RowName() == rowName)
+            return row.AsStr(column);
+    }
+    return empty_string;
+}
+
+std::string const& TwoDA::AsStr(std::string rowName, std::string const& column) const
+{
+    for (auto row: m_Rows)
+    {
+        if (row.RowName() == rowName)
+            return row.AsStr(column);
+    }
+    return empty_string;
+}
+
 std::int32_t TwoDA::AsInt(std::size_t row, std::size_t column) const
 {
     return m_Rows[row].AsInt(column);
@@ -178,6 +205,26 @@ std::int32_t TwoDA::AsInt(std::size_t row, std::size_t column) const
 std::int32_t TwoDA::AsInt(std::size_t row, std::string const& column) const
 {
     return m_Rows[row].AsInt(column);
+}
+
+std::int32_t TwoDA::AsInt(std::string rowName, std::size_t column) const
+{
+    for (auto row: m_Rows)
+    {
+        if (row.RowName() == rowName)
+            return row.AsInt(column);
+    }
+    return 0;
+}
+
+std::int32_t TwoDA::AsInt(std::string rowName, std::string const& column) const
+{
+    for (auto row: m_Rows)
+    {
+        if (row.RowName() == rowName)
+            return row.AsInt(column);
+    }
+    return 0;
 }
 
 float TwoDA::AsFloat(std::size_t row, std::size_t column) const
@@ -189,6 +236,27 @@ float TwoDA::AsFloat(std::size_t row, std::string const& column) const
 {
     return m_Rows[row].AsFloat(column);
 }
+
+float TwoDA::AsFloat(std::string rowName, std::size_t column) const
+{
+    for (auto row: m_Rows)
+    {
+        if (row.RowName() == rowName)
+            return row.AsFloat(column);
+    }
+    return 0.0;
+}
+
+float TwoDA::AsFloat(std::string rowName, std::string const& column) const
+{
+    for (auto row: m_Rows)
+    {
+        if (row.RowName() == rowName)
+            return row.AsFloat(column);
+    }
+    return 0.0;
+}
+
 
 TwoDARow& TwoDA::operator[](std::size_t row)
 {
@@ -280,12 +348,12 @@ bool TwoDA::WriteToFile(char const* path) const
 
     rawTwoDA.m_Lines.emplace_back(std::move(columns));
 
-    for (std::size_t rowId = 0; rowId < m_Rows.size(); ++rowId)
+    for (std::size_t rowIdx = 0; rowIdx < m_Rows.size(); ++rowIdx)
     {
         Raw::TwoDALine line;
-        line.m_Tokens.emplace_back(std::to_string(rowId));
+        line.m_Tokens.emplace_back(std::to_string(rowIdx));
 
-        for (const TwoDAEntry& entry : m_Rows[rowId])
+        for (const TwoDAEntry& entry : m_Rows[rowIdx])
         {
             if (!entry.m_IsEmpty)
             {

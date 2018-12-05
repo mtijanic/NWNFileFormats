@@ -18,7 +18,7 @@ struct TwoDAEntry
 class TwoDARow
 {
 public:
-    TwoDARow(std::uint32_t rowId,
+    TwoDARow(std::uint32_t rowIdx, std::string rowName,
         std::vector<TwoDAEntry>&& data,
         std::unordered_map<std::string, std::size_t> const& columns);
 
@@ -42,7 +42,8 @@ public:
     bool IsEmpty(std::size_t column) const;
     bool IsEmpty(std::string const& column) const;
 
-    std::uint32_t RowId() const;
+    std::uint32_t RowIdx() const;
+    std::string RowName() const;
 
     using TwoDAEntries = std::vector<TwoDAEntry>;
     TwoDAEntries::iterator begin();
@@ -52,7 +53,8 @@ public:
     std::size_t Size() const;
 
 private:
-    std::uint32_t m_RowId;
+    std::uint32_t m_RowIdx;
+    std::string m_RowName;
     std::unordered_map<std::string, std::size_t> const& m_ColumnNames;
     std::vector<TwoDAEntry> m_Data;
 };
@@ -65,12 +67,20 @@ public:
     // These functions can be used to extract the value as the specified type.
     std::string const& AsStr(std::size_t row, std::size_t column) const;
     std::string const& AsStr(std::size_t row, std::string const& column) const;
+    std::string const& AsStr(std::string row, std::size_t column) const;
+    std::string const& AsStr(std::string row, std::string const& column) const;
+
 
     std::int32_t AsInt(std::size_t row, std::size_t column) const;
     std::int32_t AsInt(std::size_t row, std::string const& column) const;
+    std::int32_t AsInt(std::string row, std::size_t column) const;
+    std::int32_t AsInt(std::string row, std::string const& column) const;
+
 
     float AsFloat(std::size_t row, std::size_t column) const;
     float AsFloat(std::size_t row, std::string const& column) const;
+    float AsFloat(std::string row, std::size_t column) const;
+    float AsFloat(std::string row, std::string const& column) const;
 
     // Operator[] returns the row directly.
     // Inserts a row if they do not exist - also fills in preceeding rows if they do not exist.
